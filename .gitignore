@@ -1,0 +1,23 @@
+# 忽略所有以 exe 结尾的文件
+*.exe
+*.out
+
+# 忽略文件夹
+.vs
+.vscode
+.idea
+.ipynb_checkpoints
+
+# 忽略特定名称命名的文件
+test.*
+demo.*
+Untitled*
+[tT]emp*
+tempCodeRunnerFile*
+
+*.zip
+
+# 忽略一些测试文件
+CLanguage.c
+CPlusPlus.cpp
+Template.cpp
