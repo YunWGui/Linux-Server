@@ -777,3 +777,135 @@ int main()
 }
 ```
 
+## 3.4 连接已终止的线程
+
+```cpp
+// pthread_join.c
+/*******************************************************************************
+ * #include <pthread.h>
+ * int pthread_join(pthread_t thread, void **retval);
+ * - 功能：和一个已终止的线程进行连接
+ *         回收子线程的资源
+ *         这个函数是阻塞函数，调用一次只能回收一个子线程
+ *         一般在主线程中使用
+ * - 参数：
+ *   - thread : 需要回收的子线程的 ID
+ *   - retval : 接收子线程退出时的返回值
+ * - 返回值：
+ *     成功：返回 0
+ *     失败，非 0，返回错误号
+*******************************************************************************/
+
+#include <stdio.h>
+#include <pthread.h>
+#include <string.h>
+#include <unistd.h>
+
+int value = 10;
+
+void * callback(void * arg) {
+    printf("child thread id : %ld\n", pthread_self());
+    // sleep(3);
+    // return NULL; 
+    // int value = 10; // 局部变量
+    pthread_exit((void *)&value);   // return (void *)&value;
+} 
+
+int main() {
+
+    // 创建一个子线程
+    pthread_t tid;
+    int ret = pthread_create(&tid, NULL, callback, NULL);
+
+    if(ret != 0) {
+        char * errstr = strerror(ret);
+        printf("error : %s\n", errstr);
+    }
+
+    // 主线程
+    for(int i = 0; i < 5; i++) {
+        printf("%d\n", i);
+    }
+
+    printf("tid : %ld, main thread id : %ld\n", tid ,pthread_self());
+
+    // 主线程调用pthread_join()回收子线程的资源
+    int * thread_retval;
+    ret = pthread_join(tid, (void **)&thread_retval);
+
+    if(ret != 0) {
+        char * errstr = strerror(ret);
+        printf("error : %s\n", errstr);
+    }
+
+    printf("exit data : %d\n", *thread_retval);
+
+    printf("回收子线程资源成功！\n");
+
+    // 让主线程退出,当主线程退出时，不会影响其他正常运行的线程。
+    pthread_exit(NULL);
+
+    return 0; 
+}
+```
+
+## 3.5 线程的分离
+
+```cpp
+// pthread_detach.c
+/*******************************************************************************
+ * #include <pthread.h>
+ * int pthread_detach(pthread_t thread);
+ * - 功能：分离一个线程。被分离的线程在终止的时候，会自动释放资源返回给系统。
+ *         1. 不能多次分离，会产生不可预料的行为
+ *         2. 不能去连接一个已经分离的线程，因为会报错。
+ * - 参数：需要分离的线程的 ID
+ * - 返回值：
+ *     成功：0
+ *     失败：返回错误号
+*******************************************************************************/
+
+#include <stdio.h>
+#include <pthread.h>
+#include <string.h>
+#include <unistd.h>
+
+void * callback(void * arg) {
+    printf("chid thread id : %ld\n", pthread_self());
+    return NULL;
+}
+
+int main() {
+
+    // 创建一个子线程
+    pthread_t tid;
+
+    int ret = pthread_create(&tid, NULL, callback, NULL);
+    if(ret != 0) {
+        char * errstr = strerror(ret);
+        printf("error1 : %s\n", errstr);
+    }
+
+    // 输出主线程和子线程的id
+    printf("tid : %ld, main thread id : %ld\n", tid, pthread_self());
+
+    // 设置子线程分离,子线程分离后，子线程结束时对应的资源就不需要主线程释放
+    ret = pthread_detach(tid);
+    if(ret != 0) {
+        char * errstr = strerror(ret);
+        printf("error2 : %s\n", errstr);
+    }
+
+    // 设置分离后，对分离的子线程进行连接 pthread_join()
+    // ret = pthread_join(tid, NULL);
+    // if(ret != 0) {
+    //     char * errstr = strerror(ret);
+    //     printf("error3 : %s\n", errstr);
+    // }
+
+    pthread_exit(NULL);
+
+    return 0;
+}
+```
+

@@ -4,7 +4,6 @@
 
 # 忽略文件夹
 .vs
-.vscode
 .idea
 .ipynb_checkpoints
 
