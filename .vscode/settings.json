@@ -1,0 +1,23 @@
+{
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "name": "Comment",
+            "scope": [
+              "comment",
+              "comment.block",
+              "comment.block.documentation",
+              "comment.line",
+              "comment.line.double-slash",
+              "punctuation.definition.comment",
+            ],
+            "settings": {
+              "fontStyle": "",
+              // "fontStyle": "italic",  // 斜体
+              // "fontStyle": "italic underline",  // 斜体下划线
+              // "fontStyle": "italic bold underline",  // 斜体粗体下划线
+            }
+          },
+        ]
+      },
+}

@@ -909,3 +909,117 @@ int main() {
 }
 ```
 
+## 3.6 线程取消
+
+```cpp
+/*******************************************************************************
+ * #include <pthread.h>
+ * int pthread_cancel(pthread_t thread);
+ * - 功能：取消线程（让线程终止）
+ *     取消某个线程，可以终止某个线程的运行，
+ *     但是并不是立马终止，而是当子线程执行到一个取消点，线程才会终止。
+ *     取消点：系统规定好的一些系统调用。我们可以粗略的理解为从用户区到内核区的切换，
+ *             这个位置称之为取消点。
+*******************************************************************************/
+
+#include <stdio.h>
+#include <pthread.h>
+#include <string.h>
+#include <unistd.h>
+
+void * callback(void * arg) {
+    printf("chid thread id : %ld\n", pthread_self());
+    for(int i = 0; i < 5; i++) {
+        printf("child : %d\n", i);
+    }
+    return NULL;
+}
+
+int main() {
+    
+    // 创建一个子线程
+    pthread_t tid;
+
+    int ret = pthread_create(&tid, NULL, callback, NULL);
+    if(ret != 0) {
+        char * errstr = strerror(ret);
+        printf("error1 : %s\n", errstr);
+    }
+
+    // 取消线程
+    pthread_cancel(tid);
+
+    for(int i = 0; i < 5; i++) {
+        printf("%d\n", i);
+    }
+
+    // 输出主线程和子线程的id
+    printf("tid : %ld, main thread id : %ld\n", tid, pthread_self());
+    
+    pthread_exit(NULL);
+
+    return 0;
+}
+```
+
+## 3.7 线程属性
+
+```cpp
+/*******************************************************************************
+ * int pthread_attr_init(pthread_attr_t *attr);
+ * - 初始化线程变量属性
+ * int pthread_attr_destroy(pthread_attr_t *attr);
+ * - 释放线程属性的资源
+ * int pthread_attr_getdetachstate(const pthread_attr_t *attr, int detachstate);
+ * - 获取线程分离的状态属性
+ * int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachstate);
+ * - 设置线程分离的状态属性
+*******************************************************************************/
+
+#include <stdio.h>
+#include <pthread.h>
+#include <string.h>
+#include <unistd.h>
+
+void * callback(void * arg) {
+    printf("chid thread id : %ld\n", pthread_self());
+    return NULL;
+}
+
+int main() {
+
+    // 创建一个线程属性变量
+    pthread_attr_t attr;
+
+    // 初始化属性变量
+    pthread_attr_init(&attr);
+
+    // 设置属性
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+    // 创建一个子线程
+    pthread_t tid;
+
+    int ret = pthread_create(&tid, &attr, callback, NULL);
+    if(ret != 0) {
+        char * errstr = strerror(ret);
+        printf("error1 : %s\n", errstr);
+    }
+
+    // 获取线程的栈的大小
+    size_t size;
+    pthread_attr_getstacksize(& attr, &size);
+    printf("thread stack size : %ld\n", size);
+
+    // 输出主线程和子线程的id
+    printf("tid : %ld, main thread id : %ld\n", tid, pthread_self());
+
+    // 释放线程属性资源
+    pthread_attr_destroy(&attr);
+
+    pthread_exit(NULL);
+
+    return 0;
+}
+```
+
