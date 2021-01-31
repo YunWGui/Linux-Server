@@ -24,7 +24,7 @@ int open(const char *pathname, int flags, mode_t mode);
 
 ```cpp
 // create.c
-/**
+/*******************************************************************************
  * #include <sys/types.h>
  * #include <sys/stat.h>
  * #include <fcntl.h>
@@ -39,7 +39,7 @@ int open(const char *pathname, int flags, mode_t mode);
  *          flags 32 个位，每一位就是一个标志位
  *      - mode : 八进制的数，表示用户对创建出的新的文件的操作权限
  *        最终的权限是：mode & ~umask （umask 的作用是「抹去某些权限」）
- */
+*******************************************************************************/
 
 #include <sys/types.h>
 #include <sys/stat.h>
