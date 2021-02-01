@@ -6,6 +6,42 @@
 
 # 第1章 Linux 系统编程入门
 
+## 1.1 Linux 开发环境搭建
+
+## 1.2 GCC(1)
+
+## 1.3 GCC(2)
+
+## 1.4 静态库的制作
+
+## 1.5 静态库的作用
+
+## 1.6 动态库的制作和使用
+
+## 1.7 动态库加载失败的原因
+
+## 1.8 解决动态库加载失败问题
+
+## 1.9 静态库和动态库的对比
+
+## 1.10 Makefile (1)
+
+## 1.11 Makefile (2)
+
+## 1.12 Makefile (3)
+
+## 1.13 GDB 调试 (1)
+
+## 1.14 GDB 调试 (2)
+
+## 1.15 GDB 调试 (3)
+
+## 1.16 GDB 调试 (4)
+
+## 1.17 标准 C 库 IO 函数和 Linux 系统 IO 函数对比
+
+## 1.18 虚拟地址空间
+
 ## 1.19 文件描述符
 
 ![](https://yunwgui-image.oss-cn-beijing.aliyuncs.com/86f5978d9b/20210120211207.png)
@@ -24,7 +60,7 @@ int open(const char *pathname, int flags, mode_t mode);
 
 ```cpp
 // create.c
-/**
+/*******************************************************************************
  * #include <sys/types.h>
  * #include <sys/stat.h>
  * #include <fcntl.h>
@@ -39,7 +75,7 @@ int open(const char *pathname, int flags, mode_t mode);
  *          flags 32 个位，每一位就是一个标志位
  *      - mode : 八进制的数，表示用户对创建出的新的文件的操作权限
  *        最终的权限是：mode & ~umask （umask 的作用是「抹去某些权限」）
- */
+*******************************************************************************/
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -612,11 +648,92 @@ pid_t fork(void)
     如何区分父进程和子进程：通过 fork 的返回值
     在父进程中返回 -1，表示创建子进程失败，并且设置 errno ( error number )
 *******************************************************************************/
+
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdio.h>
+
+int main() {
+
+    int num = 10;
+
+    // 创建子进程
+    pid_t pid = fork();
+
+    // 判断是父进程还是子进程
+    if(pid > 0) {
+        // printf("pid : %d\n", pid);
+        // 如果大于0，返回的是创建的子进程的进程号，当前是父进程
+        printf("i am parent process, pid : %d, ppid : %d\n", getpid(), getppid());
+
+        printf("parent num : %d\n", num);
+        num += 10;
+        printf("parent num += 10 : %d\n", num);
+
+
+    } else if(pid == 0) {
+        // 当前是子进程
+        printf("i am child process, pid : %d, ppid : %d\n", getpid(),getppid());
+       
+        printf("child num : %d\n", num);
+        num += 100;
+        printf("child num += 100 : %d\n", num);
+    }
+
+    // for循环
+    for(int i = 0; i < 3; i++) {
+        printf("i : %d , pid : %d\n", i , getpid());
+        sleep(1);
+    }
+
+    return 0;
+}
+
+/*******************************************************************************
+实际上，更准确来说，Linux 的 fork() 使用是通过写时拷贝 (copy- on-write) 实现。
+写时拷贝是一种可以推迟甚至避免拷贝数据的技术。
+内核此时并不复制整个进程的地址空间，而是让父子进程共享同一个地址空间。
+只用在需要写入的时候才会复制地址空间，从而使各个进行拥有各自的地址空间。
+也就是说，资源的复制是在需要写入的时候才会进行，在此之前，只有以只读方式共享。
+注意：fork之后父子进程共享文件，
+fork产生的子进程与父进程相同的文件文件描述符指向相同的文件表，引用计数增加，共享文件偏移指针。
+*******************************************************************************/
 ```
 
 ## 2.4 父子进程虚拟地址空间情况
 
 ## 2.5 父子进程关系及GDB多进程调试
+
+```cpp
+// hello.c
+#include <stdio.h>
+#include <unistd.h>
+
+int main() {
+
+    printf("begin\n");
+
+    if(fork() > 0) {
+        printf("我是父进程：pid = %d, ppid = %d\n", getpid(), getppid());
+
+        int i;
+        for(i = 0; i < 10; i++) {
+            printf("i = %d\n", i);
+            sleep(1);
+        }
+    } else {
+        printf("我是子进程：pid = %d, ppid = %d\n", getpid(), getppid());
+        
+        int j;
+        for(j = 0; j < 10; j++) {
+            printf("j = %d\n", j);
+            sleep(1);
+        }
+    }
+
+    return 0;
+}
+```
 
 ## 2.6 exec 函数族
 
@@ -634,6 +751,111 @@ int execve(const char *filename, char *const argv[], char *const envp[]);
 - v(vector) 存有各参数地址的指针数组的地址
 - p(path) 按 PATH 环境变量指定的目录搜索可执行文件
 - e(environment) 存有环境变量字符串地址的指针数组的地址
+
+```cpp
+// execl.c
+/*******************************************************************************  
+    #include <unistd.h>
+    int execl(const char *path, const char *arg, ...);
+        - 参数：
+            - path:需要指定的执行的文件的路径或者名称
+                a.out /home/nowcoder/a.out 推荐使用绝对路径
+                ./a.out hello world
+
+            - arg:是执行可执行文件所需要的参数列表
+                第一个参数一般没有什么作用，为了方便，一般写的是执行的程序的名称
+                从第二个参数开始往后，就是程序执行所需要的的参数列表。
+                参数最后需要以NULL结束（哨兵）
+
+        - 返回值：
+            只有当调用失败，才会有返回值，返回-1，并且设置errno
+            如果调用成功，没有返回值。
+
+*******************************************************************************/
+
+#include <unistd.h>
+#include <stdio.h>
+
+int main() {
+    // 创建一个子进程，在子进程中执行exec函数族中的函数
+    pid_t pid = fork();
+
+    if(pid > 0) {
+        // 父进程
+        printf("i am parent process, pid : %d\n",getpid());
+        sleep(1);
+    }else if(pid == 0) {
+        // 子进程
+        // execl("hello","hello",NULL);
+
+        execl("/bin/ps", "ps", "aux", NULL);
+        perror("execl");
+        printf("i am child process, pid : %d\n", getpid());
+    }
+
+    for(int i = 0; i < 3; i++) {
+        printf("i = %d, pid = %d\n", i, getpid());
+    }
+
+    return 0;
+}
+```
+
+```cpp
+// execlp.c
+/*******************************************************************************  
+    #include <unistd.h>
+    int execlp(const char *file, const char *arg, ... );
+        - 会到环境变量中查找指定的可执行文件，如果找到了就执行，找不到就执行不成功。
+        - 参数：
+            - file:需要执行的可执行文件的文件名
+                a.out
+                ps
+
+            - arg:是执行可执行文件所需要的参数列表
+                第一个参数一般没有什么作用，为了方便，一般写的是执行的程序的名称
+                从第二个参数开始往后，就是程序执行所需要的的参数列表。
+                参数最后需要以NULL结束（哨兵）
+
+        - 返回值：
+            只有当调用失败，才会有返回值，返回-1，并且设置errno
+            如果调用成功，没有返回值。
+
+
+        int execv(const char *path, char *const argv[]);
+        argv是需要的参数的一个字符串数组
+        char * argv[] = {"ps", "aux", NULL};
+        execv("/bin/ps", argv);
+
+        int execve(const char *filename, char *const argv[], char *const envp[]);
+        char * envp[] = {"/home/nowcoder", "/home/bbb", "/home/aaa"};
+*******************************************************************************/
+
+#include <unistd.h>
+#include <stdio.h>
+
+int main() {
+    // 创建一个子进程，在子进程中执行exec函数族中的函数
+    pid_t pid = fork();
+
+    if(pid > 0) {
+        // 父进程
+        printf("i am parent process, pid : %d\n",getpid());
+        sleep(1);
+    }else if(pid == 0) {
+        // 子进程
+        execlp("ps", "ps", "aux", NULL);
+
+        printf("i am child process, pid : %d\n", getpid());
+    }
+
+    for(int i = 0; i < 3; i++) {
+        printf("i = %d, pid = %d\n", i, getpid());
+    }
+
+    return 0;
+}
+```
 
 # 第 3 章 Linux 多线程开发
 

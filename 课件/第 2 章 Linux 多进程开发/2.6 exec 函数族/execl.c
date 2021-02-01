@@ -20,8 +20,6 @@
 #include <stdio.h>
 
 int main() {
-
-
     // 创建一个子进程，在子进程中执行exec函数族中的函数
     pid_t pid = fork();
 
@@ -36,13 +34,11 @@ int main() {
         execl("/bin/ps", "ps", "aux", NULL);
         perror("execl");
         printf("i am child process, pid : %d\n", getpid());
-
     }
 
     for(int i = 0; i < 3; i++) {
         printf("i = %d, pid = %d\n", i, getpid());
     }
-
 
     return 0;
 }
