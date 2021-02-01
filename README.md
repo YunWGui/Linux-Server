@@ -1171,6 +1171,126 @@ int main()
 - 多线程加锁，抢占锁资源
 
 ```cpp
+// dead_lock.c
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>  // usleep
 
+// 全局变量，所有的线程都共享这一份资源。
+int tickets = 1000;  
+
+// 创建一个互斥量
+pthread_mutex_t mutex;
+
+void* sell_ticket( void* arg ) {
+
+    // 卖票
+    while ( 1 ) {
+        pthread_mutex_lock( &mutex );  // 加锁
+        pthread_mutex_lock( &mutex );  // 加锁
+
+        if ( tickets > 0 ) {
+            usleep( 60000 );  // 睡眠 X 微秒
+            printf( "%ld 正在卖第 %d 张门票\n", pthread_self(), tickets );
+            --tickets;
+        }
+        else {
+            pthread_mutex_unlock( &mutex );  // 解锁
+            break;
+        }
+
+        pthread_mutex_unlock( &mutex );  // 解锁
+    }
+    
+
+    return NULL;
+}
+
+int main()
+{
+    // 初始化互斥量
+    pthread_mutex_init( &mutex, NULL );
+
+    // 创建三个子线程
+    pthread_t tid1, tid2, tid3;  // 线程一、二、三
+    pthread_create( &tid1, NULL, sell_ticket, NULL );
+    pthread_create( &tid2, NULL, sell_ticket, NULL );
+    pthread_create( &tid3, NULL, sell_ticket, NULL );
+
+    // 回收子线程的资源
+    pthread_join( tid1, NULL );
+    pthread_join( tid2, NULL );
+    pthread_join( tid3, NULL );
+
+    // 设置线程分离
+    pthread_detach( tid1 );
+    pthread_detach( tid2 );
+    pthread_detach( tid3 );
+
+    pthread_exit( NULL );  // 退出主线程
+
+    // 释放互斥量资源
+    pthread_mutex_destroy( &mutex );
+
+    return 0;
+}
 ```
+
+```cpp
+// dead_lock1.c
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+
+// 创建 2 个互斥量
+pthread_mutex_t mutex1, mutex2;
+
+void* workA( void* arg ) {
+    pthread_mutex_lock( &mutex1 );
+    sleep( 1 );
+    pthread_mutex_lock( &mutex2 );
+
+    printf( "workA...\n" );
+    pthread_mutex_unlock( &mutex2 );
+    pthread_mutex_unlock( &mutex1 );
+
+    return NULL;
+}
+
+void* workB( void* arg ) {
+    pthread_mutex_lock( &mutex2 );
+    sleep( 1 );
+    pthread_mutex_lock( &mutex1 );
+
+    printf( "workB...\n" );
+    pthread_mutex_unlock( &mutex1 );
+    pthread_mutex_unlock( &mutex2 );
+
+    return NULL;
+}
+
+int main()
+{
+    // 初始化互斥量
+    pthread_mutex_init( & mutex1, NULL );
+    pthread_mutex_init( & mutex2, NULL );
+
+    // 创建 2 个子线程
+    pthread_t tid1, tid2;
+    pthread_create( &tid1, NULL, workA, NULL );
+    pthread_create( &tid2, NULL, workB, NULL );
+
+    // 回收子线程资源
+    pthread_join( tid1, NULL );
+    pthread_join( tid2, NULL );
+
+    // 释放互斥量资源
+    pthread_mutex_destroy( &mutex1 );
+    pthread_mutex_destroy( &mutex2 );
+
+    return 0;
+}
+```
+
+## 3.11 读写锁
 
